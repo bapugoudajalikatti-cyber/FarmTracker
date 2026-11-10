@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FarmTrack – Smart Farming Expense & Profit Management System</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-green: #2e7d32;
+            --light-green: #e8f5e9;
+            --accent-green: #4caf50;
+            --dark-green: #1b5e20;
+            --bg-light: #f4f7f4;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-light);
+            color: #333;
+        }
+        .navbar-custom {
+            background-color: var(--primary-green);
+        }
+        .navbar-custom .navbar-brand, .navbar-custom .nav-link {
+            color: #ffffff !important;
+        }
+        .navbar-custom .nav-link:hover {
+            color: #c8e6c9 !important;
+        }
+        .card-summary {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease;
+        }
+        .card-summary:hover {
+            transform: translateY(-3px);
+        }
+        .bg-gradient-income { background: linear-gradient(135deg, #2e7d32, #4caf50); color: white; }
+        .bg-gradient-expense { background: linear-gradient(135deg, #c62828, #ef5350); color: white; }
+        .bg-gradient-profit { background: linear-gradient(135deg, #1565c0, #42a5f5); color: white; }
+        .bg-gradient-loss { background: linear-gradient(135deg, #d84315, #ff7043); color: white; }
+        .bg-gradient-invest { background: linear-gradient(135deg, #6a1b9a, #ab47bc); color: white; }
+        .bg-gradient-crops { background: linear-gradient(135deg, #f57f17, #fbc02d); color: white; }
+
+        .sidebar {
+            background-color: #ffffff;
+            min-height: calc(100vh - 60px);
+            box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+        }
+        .sidebar .nav-link {
+            color: #444;
+            padding: 12px 20px;
+            font-weight: 500;
+            border-radius: 8px;
+            margin: 4px 8px;
+        }
+        .sidebar .nav-link.active, .sidebar .nav-link:hover {
+            background-color: var(--light-green);
+            color: var(--dark-green);
+        }
+        .btn-custom-primary {
+            background-color: var(--primary-green);
+            color: white;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-weight: 600;
+        }
+        .btn-custom-primary:hover {
+            background-color: var(--dark-green);
+            color: white;
+        }
+        .currency-symbol {
+            font-family: Arial, sans-serif;
+        }
+        .form-control, .form-select {
+            border-radius: 8px;
+            padding: 10px 14px;
+        }
+        .table-responsive {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        }
+        .auth-container {
+            max-width: 480px;
+            margin: 60px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        }
+        .hidden-view { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <!-- Top Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand fw-bold fs-4" href="#" onclick="switchView('dashboard')">
+                <i class="fa-solid fa-wheat-awn me-2"></i>FarmTrack
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#topNavbar">
+                <span class="navbar-toggler-icon" style="filter: invert(1);"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="topNavbar">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <!-- Language Selection Dropdown -->
+                    <li class="nav-item me-3">
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white text-dark"><i class="fa-solid fa-language"></i></span>
+                            <select id="langSelect" class="form-select form-select-sm fw-bold" onchange="changeLanguage(this.value)">
+                                <option value="en">English</option>
+                                <option value="kn">ಕನ್ನಡ (Kannada)</option>
+                                <option value="hi">हिंदी (Hindi)</option>
+                                <option value="te">తెలుగు (Telugu)</option>
+                                <option value="ta">தமிழ் (Tamil)</option>
+                                <option value="ml">മലയാളം (Malayalam)</option>
+                                <option value="mr">मराठी (Marathi)</option>
+                                <option value="bn">বাংলা (Bengali)</option>
+                                <option value="gu">ગુજરાતી (Gujarati)</option>
+                                <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
+                                <option value="or">ଓଡ଼ିଆ (Odia)</option>
+                                <option value="as">অসমীয়া (Assamese)</option>
+                            </select>
+                        </div>
+                    </li>
+                    <!-- Auth State Controls -->
+                    <li class="nav-item auth-logged-in hidden-view dropdown">
+                        <a class="nav-link dropdown-toggle text-white fw-semibold" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fa-solid fa-user-circle me-1"></i> <span id="navFarmerName">Farmer Name</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow">
+                            <li><a class="dropdown-menu-item dropdown-item" href="#" onclick="switchView('profile')"><i class="fa-solid fa-id-card me-2"></i><span data-i18n="navProfile">Profile</span></a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-menu-item dropdown-item text-danger" href="#" onclick="logout()"><i class="fa-solid fa-right-from-bracket me-2"></i><span data-i18n="navLogout">Logout</span></a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item auth-logged-out">
+                        <button class="btn btn-light btn-sm fw-bold" onclick="switchView('login')" data-i18n="navLogin">Login</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main App Container -->
+    <div class="container-fluid">
+        <div class="row">
+            
+            <!-- Sidebar Navigation -->
+            <div id="sidebarMenu" class="col-md-3 col-lg-2 sidebar py-3 auth-logged-in hidden-view">
+                <div class="nav flex-column nav-pills">
+                    <button class="nav-link text-start active" id="nav-dashboard" onclick="switchView('dashboard')">
+                        <i class="fa-solid fa-chart-line me-2"></i><span data-i18n="menuDashboard">Dashboard</span>
+                    </button>
+                    <button class="nav-link text-start" id="nav-farms" onclick="switchView('farms')">
+                        <i class="fa-solid fa-tractor me-2"></i><span data-i18n="menuFarms">Farm Management</span>
+                    </button>
+                    <button class="nav-link text-start" id="nav-crops" onclick="switchView('crops')">
+                        <i class="fa-solid fa-seedling me-2"></i><span data-i18n="menuCrops">Crop Management</span>
+                    </button>
+                    <button class="nav-link text-start" id="nav-add-expense" onclick="switchView('add-expense')">
+                        <i class="fa-solid fa-circle-minus me-2 text-danger"></i><span data-i18n="menuAddExpense">Add Expense</span>
+                    </button>
+                    <button class="nav-link text-start" id="nav-add-income" onclick="switchView('add-income')">
+                        <i class="fa-solid fa-circle-plus me-2 text-success"></i><span data-i18n="menuAddIncome">Add Income</span>
+                    </button>
+                    <button class="nav-link text-start" id="nav-transactions" onclick="switchView('transactions')">
+                        <i class="fa-solid fa-list-check me-2"></i><span data-i18n="menuTransactions">Transaction Log</span>
+                    </button>
+                    <button class="nav-link text-start" id="nav-reports" onclick="switchView('reports')">
+                        <i class="fa-solid fa-file-invoice-dollar me-2"></i><span data-i18n="menuReports">Reports & Analytics</span>
+                    </button>
+                    <button class="nav-link text-start" id="nav-profile" onclick="switchView('profile')">
+                        <i class="fa-solid fa-user me-2"></i><span data-i18n="navProfile">Farmer Profile</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content Panel -->
+            <div id="mainContent" class="col-md-9 col-lg-10 p-4 ms-auto w-100">
+
+                <!-- VIEW: LOGIN -->
+                <div id="view-login" class="auth-container">
+                    <h3 class="text-center fw-bold mb-4 text-success"><i class="fa-solid fa-seedling me-2"></i><span data-i18n="loginTitle">Farmer Login</span></h3>
+                    <form onsubmit="handleLogin(event)">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" data-i18n="lblMobile">Mobile Number</label>
+                            <input type="text" id="loginMobile" class="form-control" required placeholder="9876543210">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" data-i18n="lblPassword">Password</label>
+                            <input type="password" id="loginPassword" class="form-control" required placeholder="••••••••">
+                        </div>
+                        <button type="submit" class="btn btn-custom-primary w-100 mb-3" data-i18n="btnLogin">Login</button>
+                        <p class="text-center mb-0 text-muted">
+                            <span data-i18n="msgNoAccount">Don't have an account?</span> 
+                            <a href="#" class="text-success fw-bold text-decoration-none" onclick="switchView('register')" data-i18n="btnRegister">Register Here</a>
+                        </p>
+                    </form>
+                </div>
+
+                <!-- VIEW: REGISTER -->
+                <div id="view-register" class="auth-container hidden-view" style="max-width: 600px;">
+                    <h3 class="text-center fw-bold mb-4 text-success"><i class="fa-solid fa-user-plus me-2"></i><span data-i18n="regTitle">Farmer Registration</span></h3>
+                    <form onsubmit="handleRegister(event)">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold" data-i18n="lblFarmerName">Farmer Name *</label>
+                                <input type="text" id="regName" class="form-control" required placeholder="Ramesh Patel">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold" data-i18n="lblMobile">Mobile Number *</label>
+                                <input type="tel" id="regMobile" class="form-control" required placeholder="9876543210">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold" data-i18n="lblEmail">Email (Optional)</label>
+                                <input type="email" id="regEmail" class="form-control" placeholder="farmer@example.com">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold" data-i18n="lblState">State *</label>
+                                <input type="text" id="regState" class="form-control" required placeholder="Karnataka">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold" data-i18n="lblDistrict">District *</label>
+                                <input type="text" id="regDistrict" class="form-control" required placeholder="Mandya">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold" data-i18n="lblVillage">Village *</label>
+                                <input type="text" id="regVillage" class="form-control" required placeholder="Srirangapatna">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold" data-i18n="lblPrefLang">Preferred Language *</label>
+                                <select id="regLang" class="form-select">
+                                    <option value="en">English</option>
+                                    <option value="kn">ಕನ್ನಡ (Kannada)</option>
+                                    <option value="hi">हिंदी (Hindi)</option>
+                                    <option value="te">తెలుగు (Telugu)</option>
+                                    <option value="ta">தமிழ் (Tamil)</option>
+                                    <option value="ml">മലയാളം (Malayalam)</option>
+                                    <option value="mr">मराठी (Marathi)</option>
+                                    <option value="bn">বাংলা (Bengali)</option>
+                                    <option value="gu">ગુજરાતી (Gujarati)</option>
+                                    <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
+                                    <option value="or">ଓଡ଼ିଆ (Odia)</option>
+                                    <option value="as">অসমীয়া (Assamese)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold" data-i18n="lblPassword">Password *</label>
+                                <input type="password" id="regPassword" class="form-control" required placeholder="••••••••">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-custom-primary w-100 mb-3" data-i18n="btnRegister">Create Account</button>
+                        <p class="text-center mb-0 text-muted">
+                            <span data-i18n="msgHaveAccount">Already registered?</span> 
+                            <a href="#" class="text-success fw-bold text-decoration-none" onclick="switchView('login')" data-i18n="btnLogin">Login Here</a>
+                        </p>
+                    </form>
+                </div>
+
+                <!-- VIEW: DASHBOARD -->
+                <div id="view-dashboard" class="hidden-view">
+
+                    <!-- QUICK ACTIONS -->
+                    <div class="row g-3 mb-4 mt-2">
+                        <div class="col-6 col-md-3">
+                            <button class="btn btn-danger w-100 py-3 shadow-sm fw-bold rounded-4" onclick="switchView('add-expense')">
+                                <i class="fa-solid fa-circle-minus d-block fs-3 mb-2"></i> Add Expense
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <button class="btn btn-success w-100 py-3 shadow-sm fw-bold rounded-4" onclick="switchView('add-income')">
+                                <i class="fa-solid fa-circle-plus d-block fs-3 mb-2"></i> Add Income
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <button class="btn btn-primary w-100 py-3 shadow-sm fw-bold rounded-4" onclick="switchView('farms')">
+                                <i class="fa-solid fa-tractor d-block fs-3 mb-2"></i> Add Farm
+                            </button>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <button class="btn btn-warning w-100 py-3 shadow-sm fw-bold rounded-4 text-dark" onclick="switchView('crops')">
+                                <i class="fa-solid fa-seedling d-block fs-3 mb-2"></i> Add Crop
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Dashboard Header & Filters -->
+                    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+                        <div>
+                            <h3 class="fw-bold mb-1" data-i18n="dashTitle">Farming Overview</h3>
+                            <p class="text-muted mb-0" data-i18n="dashSubtitle">Real-time monetary track of income, expenses & profit</p>
+                        </div>
+                        <div class="d-flex gap-2 flex-wrap mt-2 mt-md-0">
+                            <select id="filterFarm" class="form-select form-select-sm" onchange="renderDashboard()">
+                                <option value="ALL" data-i18n="optAllFarms">All Farms</option>
+                            </select>
+                            <select id="filterCrop" class="form-select form-select-sm" onchange="renderDashboard()">
+                                <option value="ALL" data-i18n="optAllCrops">All Crops</option>
+                            </select>
+                            <select id="filterSeason" class="form-select form-select-sm" onchange="renderDashboard()">
+                                <option value="ALL" data-i18n="optAllSeasons">All Seasons</option>
+                                <option value="Kharif">Kharif</option>
+                                <option value="Rabi">Rabi</option>
+                                <option value="Zaid">Zaid</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 6 Financial Summary Cards -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4 col-lg-2">
+                            <div class="card card-summary bg-gradient-income p-3">
+                                <div class="small text-white-50 fw-semibold" data-i18n="cardTotalIncome">Total Income</div>
+                                <h4 class="fw-bold mt-2 mb-0" id="cardValIncome">₹0</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-lg-2">
+                            <div class="card card-summary bg-gradient-expense p-3">
+                                <div class="small text-white-50 fw-semibold" data-i18n="cardTotalExpense">Total Expenses</div>
+                                <h4 class="fw-bold mt-2 mb-0" id="cardValExpense">₹0</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-lg-2">
+                            <div class="card card-summary bg-gradient-profit p-3">
+                                <div class="small text-white-50 fw-semibold" data-i18n="cardNetProfit">Net Profit</div>
+                                <h4 class="fw-bold mt-2 mb-0" id="cardValProfit">₹0</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-lg-2">
+                            <div class="card card-summary bg-gradient-loss p-3">
+                                <div class="small text-white-50 fw-semibold" data-i18n="cardTotalLoss">Total Loss</div>
+                                <h4 class="fw-bold mt-2 mb-0" id="cardValLoss">₹0</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-lg-2">
+                            <div class="card card-summary bg-gradient-invest p-3">
+                                <div class="small text-white-50 fw-semibold" data-i18n="cardInvestment">Total Investment</div>
+                                <h4 class="fw-bold mt-2 mb-0" id="cardValInvest">₹0</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-lg-2">
+                            <div class="card card-summary bg-gradient-crops p-3">
+                                <div class="small text-white-50 fw-semibold" data-i18n="cardActiveCrops">Active Crops</div>
+                                <h4 class="fw-bold mt-2 mb-0" id="cardValCrops">0</h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rupee Amount Charts -->
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-7">
+                            <div class="card p-3 shadow-sm border-0 rounded-4">
+                                <h6 class="fw-bold mb-3" data-i18n="chartIncomeVSExpense">Income vs Expenses (Actual ₹ Amounts)</h6>
+                                <div style="height: 280px;">
+                                    <canvas id="chartIncomeVsExpenseCanvas"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <div class="card p-3 shadow-sm border-0 rounded-4">
+                                <h6 class="fw-bold mb-3" data-i18n="chartExpenseCat">Expense Breakdown by Category (₹)</h6>
+                                <div style="height: 280px;">
+                                    <canvas id="chartExpenseCategoryCanvas"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Crop Profit/Loss Table -->
+                    <div class="table-responsive mb-4">
+                        <h6 class="fw-bold mb-3" data-i18n="titleCropProfitSummary">Crop-wise Profitability Statement</h6>
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th data-i18n="tblCrop">Crop</th>
+                                    <th data-i18n="tblFarm">Farm</th>
+                                    <th data-i18n="cardTotalIncome">Total Income</th>
+                                    <th data-i18n="cardTotalExpense">Total Expenses</th>
+                                    <th data-i18n="tblNetProfitLoss">Net Profit / Loss</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cropSummaryTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- VIEW: FARM MANAGEMENT (FLATTENED FORM) -->
+                <div id="view-farms" class="hidden-view">
+                    <h3 class="fw-bold mb-4" data-i18n="menuFarms">Farm Management</h3>
+                    
+                    <!-- Direct Add Farm Form -->
+                    <div class="card p-4 shadow-sm border-0 rounded-4 mb-4">
+                        <h5 class="fw-bold text-primary mb-3"><i class="fa-solid fa-plus me-2"></i><span data-i18n="btnAddFarm">Add New Farm</span></h5>
+                        <form onsubmit="handleSaveFarm(event)">
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label fw-semibold" data-i18n="lblFarmName">Farm Name *</label>
+                                    <input type="text" id="farmName" class="form-control" required placeholder="e.g. Green Valley">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label fw-semibold" data-i18n="lblArea">Land Area *</label>
+                                    <input type="number" id="farmArea" class="form-control" min="0.1" step="0.1" required placeholder="4.5">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label fw-semibold" data-i18n="lblUnit">Unit *</label>
+                                    <select id="farmUnit" class="form-select">
+                                        <option value="Acres">Acres</option>
+                                        <option value="Hectares">Hectares</option>
+                                        <option value="Guntas">Guntas</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-8 mb-3">
+                                    <label class="form-label fw-semibold" data-i18n="lblLocation">Location / Village</label>
+                                    <input type="text" id="farmLocation" class="form-control" placeholder="Village Sub-location">
+                                </div>
+                                <div class="col-md-4 mb-3 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-custom-primary w-100" data-i18n="btnSave">Save Farm</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Farms List Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th data-i18n="lblFarmName">Farm Name</th>
+                                    <th data-i18n="lblArea">Land Area</th>
+                                    <th data-i18n="lblUnit">Unit</th>
+                                    <th data-i18n="lblLocation">Location / Village</th>
+                                    <th data-i18n="lblActions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="farmListTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- VIEW: CROP MANAGEMENT (FLATTENED FORM) -->
+                <div id="view-crops" class="hidden-view">
+                    <h3 class="fw-bold mb-4" data-i18n="menuCrops">Crop Management</h3>
+                    
+                    <!-- Direct Add Crop Form -->
+                    <div class="card p-4 shadow-sm border-0 rounded-4 mb-4">
+                        <h5 class="fw-bold text-warning text-dark mb-3"><i class="fa-solid fa-seedling me-2"></i><span data-i18n="btnAddCrop">Add New Crop</span></h5>
+                        <form onsubmit="handleSaveCrop(event)">
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label fw-semibold" data-i18n="lblFarm">Select Farm *</label>
+                                    <select id="cropFarmId" class="form-select" required></select>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label fw-semibold" data-i18n="lblCropName">Crop Name *</label>
+                                    <input type="text" id="cropName" class="form-control" required placeholder="Sugarcane, Wheat...">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label fw-semibold" data-i18n="lblSeason">Farming Season *</label>
+                                    <select id="cropSeason" class="form-select" required>
+                                        <option value="Kharif">Kharif (Monsoon)</option>
+                                        <option value="Rabi">Rabi (Winter)</option>
+                                        <option value="Zaid">Zaid (Summer)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label fw-semibold" data-i18n="lblSowingDate">Sowing / Planting Date</label>
+                                    <input type="date" id="cropSowing" class="form-control">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label fw-semibold" data-i18n="lblHarvestDate">Expected Harvest Date</label>
+                                    <input type="date" id="cropHarvest" class="form-control">
+                                </div>
+                                <div class="col-md-4 mb-3 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-custom-primary w-100" data-i18n="btnSave">Save Crop</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Crops List Table -->
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th data-i18n="lblCropName">Crop Name</th>
+                                    <th data-i18n="lblFarm">Farm</th>
+                                    <th data-i18n="lblSeason">Farming Season</th>
+                                    <th data-i18n="lblSowingDate">Cultivation Date</th>
+                                    <th data-i18n="lblHarvestDate">Harvest Date</th>
+                                    <th data-i18n="lblActions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cropListTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- VIEW: ADD EXPENSE -->
+                <div id="view-add-expense" class="hidden-view">
+                    <div class="card p-4 shadow-sm border-0 rounded-4 max-w-700 mx-auto" style="max-width: 700px;">
+                        <h4 class="fw-bold mb-3 text-danger"><i class="fa-solid fa-circle-minus me-2"></i><span data-i18n="menuAddExpense">Record Daily Expense</span></h4>
+                        <form onsubmit="handleSaveExpense(event)">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold" data-i18n="lblDate">Date *</label>
+                                    <input type="date" id="expDate" class="form-control" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold" data-i18n="lblFarm">Select Farm *</label>
+                                    <select id="expFarm" class="form-select" required onchange="populateCropDropdown('expFarm', 'expCrop')"></select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold" data-i18n="lblCrop">Select Crop *</label>
+                                    <select id="expCrop" class="form-select" required></select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold" data-i18n="lblCategory">Expense Category *</label>
+                                    <select id="expCategory" class="form-select" required>
+                                        <option value="Seeds">Seeds</option>
+                                        <option value="Fertilizers">Fertilizers</option>
+                                        <option value="Pesticides">Pesticides</option>
+                                        <option value="Labour charges">Labour Charges</option>
+                                        <option value="Tractor and machinery">Tractor & Machinery</option>
+                                        <option value="Irrigation and electricity">Irrigation & Electricity</option>
+                                        <option value="Transportation">Transportation</option>
+                                        <option value="Equipment maintenance">Equipment Maintenance</option>
+                                        <option value="Land rent">Land Rent</option>
+                                        <option value="Other expenses">Other Expenses</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold" data-i18n="lblAmount">Amount (₹) *</label>
+                                    <input type="number" id="expAmount" class="form-control" min="1" step="0.01" required placeholder="5000">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold" data-i18n="lblPaymentMethod">Payment Method</label>
+                                    <select id="expPaymentMethod" class="form-select">
+                                        <option value="Cash">Cash</option>
+                                        <option value="UPI / Online">UPI / Online</option>
+                                        <option value="Bank Transfer">Bank Transfer</option>
+                                        <option value="Credit / Credit Store">Credit (Store)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold" data-i18n="lblDescription">Description / Notes</label>
+                                <textarea id="expDescription" class="form-control" rows="2" placeholder="e.g. 5 bags of Urea fertilizer"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-custom-primary w-100" data-i18n="btnSave">Save Expense</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- VIEW: ADD INCOME -->
+                <div id="view-add-income" class="hidden-view">
+                    <div class="card p-4 shadow-sm border-0 rounded-4 mx-auto" style="max-width: 700px;">
+                        <h4 class="fw-bold mb-3 text-success"><i class="fa-solid fa-circle-plus me-2"></i><span data-i18n="menuAddIncome">Record Crop Sale Income</span></h4>
+                        <form onsubmit="handleSaveIncome(event)">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold" data-i18n="lblDate">Sale Date *</label>
+                                    <input type="date" id="incDate" class="form-control" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold" data-i18n="lblFarm">Select Farm *</label>
+                                    <select id="incFarm" class="form-select" required onchange="populateCropDropdown('incFarm', 'incCrop')"></select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold" data-i18n="lblCrop">Select Crop *</label>
+                                    <select id="incCrop" class="form-select" required></select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold" data-i18n="lblUnit">Unit of Sale *</label>
+                                    <select id="incUnit" class="form-select" required>
+                                        <option value="kg">Kilogram (kg)</option>
+                                        <option value="quintal">Quintal</option>
+                                        <option value="tonne">Tonne</option>
+                                        <option value="crates">Crates / Bags</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold" data-i18n="lblQuantity">Quantity Sold *</label>
+                                    <input type="number" id="incQuantity" class="form-control" min="0.1" step="0.01" required oninput="calcTotalIncomeAmount()">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold" data-i18n="lblPricePerUnit">Price per Unit (₹) *</label>
+                                    <input type="number" id="incPriceUnit" class="form-control" min="1" step="0.01" required oninput="calcTotalIncomeAmount()">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold" data-i18n="lblTotalAmount">Total Sale Amount (₹)</label>
+                                    <input type="number" id="incTotalAmount" class="form-control bg-light fw-bold text-success" readonly placeholder="0">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-semibold" data-i18n="lblBuyer">Buyer Details (Optional)</label>
+                                    <input type="text" id="incBuyer" class="form-control" placeholder="APMC Mandi Trader / Local Market">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-custom-primary w-100" data-i18n="btnSave">Save Income Transaction</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- VIEW: TRANSACTIONS -->
+                <div id="view-transactions" class="hidden-view">
+                    <h3 class="fw-bold mb-4" data-i18n="menuTransactions">All Transaction History</h3>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th data-i18n="lblType">Type</th>
+                                    <th data-i18n="lblDate">Date</th>
+                                    <th data-i18n="lblFarm">Farm</th>
+                                    <th data-i18n="lblCrop">Crop</th>
+                                    <th data-i18n="lblCategory">Details / Category</th>
+                                    <th data-i18n="lblAmount">Amount (₹)</th>
+                                    <th data-i18n="lblActions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactionTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- VIEW: REPORTS & ANALYTICS -->
+                <div id="view-reports" class="hidden-view">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h3 class="fw-bold" data-i18n="menuReports">Reports & Export Analytics</h3>
+                        <div>
+                            <button class="btn btn-outline-success me-2" onclick="exportToExcel()"><i class="fa-solid fa-file-excel me-2"></i>Excel (.csv)</button>
+                            <button class="btn btn-outline-danger" onclick="exportToPDF()"><i class="fa-solid fa-file-pdf me-2"></i>PDF Report</button>
+                        </div>
+                    </div>
+                    
+                    <div class="card p-4 shadow-sm border-0 rounded-4">
+                        <h5 class="fw-bold mb-3" data-i18n="lblReportSummary">Comprehensive Financial Summary</h5>
+                        <div id="reportContainer">
+                            <div class="row text-center my-3">
+                                <div class="col-md-4 border-end">
+                                    <p class="text-muted mb-1" data-i18n="cardTotalIncome">Total Income</p>
+                                    <h3 class="text-success fw-bold" id="repTotalIncome">₹0</h3>
+                                </div>
+                                <div class="col-md-4 border-end">
+                                    <p class="text-muted mb-1" data-i18n="cardTotalExpense">Total Expenses</p>
+                                    <h3 class="text-danger fw-bold" id="repTotalExpense">₹0</h3>
+                                </div>
+                                <div class="col-md-4">
+                                    <p class="text-muted mb-1" data-i18n="cardNetProfit">Net Profit / Loss</p>
+                                    <h3 class="text-primary fw-bold" id="repNetProfit">₹0</h3>
+                                </div>
+                            </div>
+                            <hr>
+                            <h6 class="fw-bold my-3" data-i18n="lblDetailedBreakdown">Category-wise Expenditure</h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th data-i18n="lblCategory">Expense Category</th>
+                                            <th data-i18n="lblAmount">Total Spent (₹)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="repCategoryBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW: FARMER PROFILE -->
+                <div id="view-profile" class="hidden-view">
+                    <div class="card p-4 shadow-sm border-0 rounded-4 mx-auto" style="max-width: 600px;">
+                        <h4 class="fw-bold mb-4 text-success"><i class="fa-solid fa-address-card me-2"></i><span data-i18n="navProfile">Farmer Profile</span></h4>
+                        <div class="mb-3">
+                            <label class="text-muted mb-1" data-i18n="lblFarmerName">Farmer Name</label>
+                            <h5 class="fw-bold" id="profName">-</h5>
+                        </div>
+                        <div class="mb-3">
+                            <label class="text-muted mb-1" data-i18n="lblMobile">Mobile Number</label>
+                            <h5 class="fw-bold" id="profMobile">-</h5>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="text-muted mb-1" data-i18n="lblState">State</label>
+                                <p class="fw-bold mb-0" id="profState">-</p>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="text-muted mb-1" data-i18n="lblDistrict">District</label>
+                                <p class="fw-bold mb-0" id="profDistrict">-</p>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="text-muted mb-1" data-i18n="lblVillage">Village</label>
+                                <p class="fw-bold mb-0" id="profVillage">-</p>
+                            </div>
+                        </div>
+                        <hr>
+                        <button type="button" class="btn btn-outline-danger w-100" onclick="deleteEntireAccount()">
+                            <i class="fa-solid fa-user-xmark me-2"></i>Delete Entire Account
+                        </button>
+                        <small class="text-danger d-block mt-2">This permanently deletes your account, farms, crops, income and expense records.</small>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Firebase CDN -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+    <!-- App JavaScript Core -->
+    <script>
+        // -------------------------------------------------------------
+        // 1. Multilingual i18n Dictionaries (12 Indian Languages)
+        // -------------------------------------------------------------
+        const i18n = {
+            en: {
+                loginTitle: "Farmer Login", regTitle: "Farmer Registration",
+                lblMobile: "Mobile Number", lblPassword: "Password", btnLogin: "Login",
+                btnRegister: "Register Here", msgNoAccount: "Don't have an account?",
+                msgHaveAccount: "Already registered?", lblFarmerName: "Farmer Name",
+                lblEmail: "Email", lblState: "State", lblDistrict: "District",
+                lblVillage: "Village", lblPrefLang: "Preferred Language",
+                navProfile: "Profile", navSettings: "Settings", navLogout: "Logout",
+                navLogin: "Login", menuDashboard: "Dashboard", menuFarms: "Farm Management",
+                menuCrops: "Crop Management", menuAddExpense: "Add Expense", menuAddIncome: "Add Income",
+                menuTransactions: "Transaction Log", menuReports: "Reports & Analytics",
+                dashTitle: "Farming Overview", dashSubtitle: "Monetary track of income, expenses & profit",
+                optAllFarms: "All Farms", optAllCrops: "All Crops", optAllSeasons: "All Seasons",
+                cardTotalIncome: "Total Income", cardTotalExpense: "Total Expenses", cardNetProfit: "Net Profit",
+                cardTotalLoss: "Total Loss", cardInvestment: "Total Investment", cardActiveCrops: "Active Crops",
+                chartIncomeVSExpense: "Income vs Expenses (Rupees ₹)", chartExpenseCat: "Expense Breakdown (₹)",
+                titleCropProfitSummary: "Crop-wise Profitability Statement", tblCrop: "Crop", tblFarm: "Farm",
+                tblNetProfitLoss: "Net Profit / Loss", btnAddFarm: "Add New Farm", btnAddCrop: "Add New Crop",
+                lblFarmName: "Farm Name", lblArea: "Land Area", lblUnit: "Unit", lblLocation: "Location",
+                lblActions: "Actions", lblCropName: "Crop Name", lblSeason: "Farming Season",
+                lblSowingDate: "Cultivation Date", lblHarvestDate: "Harvest Date", lblDate: "Date",
+                lblCategory: "Expense Category", lblAmount: "Amount (₹)", lblPaymentMethod: "Payment Method",
+                lblDescription: "Description", btnSave: "Save", lblQuantity: "Quantity Sold",
+                lblPricePerUnit: "Price per Unit (₹)", lblTotalAmount: "Total Sale Amount (₹)",
+                lblBuyer: "Buyer Details", lblType: "Type", btnClose: "Close",
+                lblReportSummary: "Financial Summary Report", lblDetailedBreakdown: "Category-wise Expenditure"
+            },
+            kn: {
+                loginTitle: "ರೈತರ ಲಾಗಿನ್", regTitle: "ರೈತರ ನೋಂದಣಿ",
+                lblMobile: "ಮೊಬೈಲ್ ಸಂಖ್ಯೆ", lblPassword: "ಪಾಸ್‌ವರ್ಡ್", btnLogin: "ಲಾಗಿನ್",
+                btnRegister: "ಇಲ್ಲಿ ನೋಂದಾಯಿಸಿ", msgNoAccount: "ಖಾತೆ ಇಲ್ಲವೇ?",
+                msgHaveAccount: "ಈಗಾಗಲೇ ನೋಂದಾಯಿಸಲಾಗಿದೆಯೇ?", lblFarmerName: "ರೈತರ ಹೆಸರು",
+                lblEmail: "ಇಮೇಲ್", lblState: "ರಾಜ್ಯ", lblDistrict: "ಜಿಲ್ಲೆ",
+                lblVillage: "ಗ್ರಾಮ", lblPrefLang: "ಆದ್ಯತೆಯ ಭಾಷೆ",
+                navProfile: "ಪ್ರೊಫೈಲ್", navSettings: "ಸೇಟಿಂಗ್ಸ್", navLogout: "ಲಾಗ್‌ಔಟ್",
+                navLogin: "ಲಾಗಿನ್", menuDashboard: "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್", menuFarms: "ಜಮೀನು ನಿರ್ವಹಣೆ",
+                menuCrops: "ಬೆಳೆ ನಿರ್ವಹಣೆ", menuAddExpense: "ಖರ್ಚು ಸೇರಿಸಿ", menuAddIncome: "ಆದಾಯ ಸೇರಿಸಿ",
+                menuTransactions: "ವಹಿವಾಟು ಪಟ್ಟಿ", menuReports: "ವರದಿಗಳು",
+                dashTitle: "ಕೃಷಿ ಅವಲೋಕನ", dashSubtitle: "ಆದಾಯ, ವೆಚ್ಚ ಮತ್ತು ಲಾಭದ ಹಣಕಾಸು ವಿವರಗಳು",
+                optAllFarms: "ಎಲ್ಲಾ ಜಮೀನುಗಳು", optAllCrops: "ಎಲ್ಲಾ ಬೆಳೆಗಳು", optAllSeasons: "ಎಲ್ಲಾ ಋತುಗಳು",
+                cardTotalIncome: "ಒಟ್ಟು ಆದಾಯ", cardTotalExpense: "ಒಟ್ಟು ವೆಚ್ಚಗಳು", cardNetProfit: "ನಿವ್ವಳ ಲಾಭ",
+                cardTotalLoss: "ಒಟ್ಟು ನಷ್ಟ", cardInvestment: "ಒಟ್ಟು ಹೂಡಿಕೆ", cardActiveCrops: "ಸಕ್ರಿಯ ಬೆಳೆಗಳು",
+                chartIncomeVSExpense: "ಆದಾಯ ಮತ್ತು ವೆಚ್ಚ (ರೂ. ₹)", chartExpenseCat: "ವೆಚ್ಚ ವರ್ಗೀಕರಣ (ರೂ. ₹)",
+                titleCropProfitSummary: "ಬೆಳೆವಾರು ಲಾಭದ ವಿವರಣೆ", tblCrop: "ಬೆಳೆ", tblFarm: "ಜಮೀನು",
+                tblNetProfitLoss: "ನಿವ್ವಳ ಲಾಭ / ನಷ್ಟ", btnAddFarm: "ಹೊಸ ಜಮೀನು ಸೇರಿಸಿ", btnAddCrop: "ಹೊಸ ಬೆಳೆ ಸೇರಿಸಿ",
+                lblFarmName: "ಜಮೀನಿನ ಹೆಸರು", lblArea: "ವಿಸ್ತೀರ್ಣ", lblUnit: "ಘಟಕ", lblLocation: "ಸ್ಥಳ",
+                lblActions: "ಕ್ರಿಯೆಗಳು", lblCropName: "ಬೆಳೆಯ ಹೆಸರು", lblSeason: "ಋತು",
+                lblSowingDate: "ಬಿತ್ತನೆ ದಿನಾಂಕ", lblHarvestDate: "ಕೊಯ್ಲು ದಿನಾಂಕ", lblDate: "ದಿನಾಂಕ",
+                lblCategory: "ಖರ್ಚಿನ ವರ್ಗ", lblAmount: "ಮೊತ್ತ (₹)", lblPaymentMethod: "ಪಾವತಿ ವಿಧಾನ",
+                lblDescription: "ವಿವರಣೆ", btnSave: "ಸಂಗ್ರಹಿಸಿ", lblQuantity: "ಮಾರಾಟವಾದ ಪ್ರಮಾಣ",
+                lblPricePerUnit: "ಪ್ರತಿ ಯೂನಿಟ್ ಬೆಲೆ (₹)", lblTotalAmount: "ಒಟ್ಟು ಮಾರಾಟ ಮೊತ್ತ (₹)",
+                lblBuyer: "ಖರೀದಿದಾರರ ವಿವರ", lblType: "ಪ್ರಕಾರ", btnClose: "ಮುಚ್ಚಿ",
+                lblReportSummary: "ಹಣಕಾಸು ವರದಿ ಸಾರಾಂಶ", lblDetailedBreakdown: "ವರ್ಗವಾರು ವೆಚ್ಚಗಳು"
+            },
+            hi: {
+                loginTitle: "किसान लॉगिन", regTitle: "किसान पंजीकरण",
+                lblMobile: "मोबाइल नंबर", lblPassword: "पासवर्ड", btnLogin: "लॉगिन करें",
+                btnRegister: "यहाँ पंजीकरण करें", msgNoAccount: "खाता नहीं है?",
+                msgHaveAccount: "पहले से पंजीकृत हैं?", lblFarmerName: "किसान का नाम",
+                lblEmail: "ईमेल", lblState: "राज्य", lblDistrict: "जिला",
+                lblVillage: "गांव", lblPrefLang: "पसंदीदा भाषा",
+                navProfile: "प्रोफ़ाइल", navSettings: "सेटिंग्स", navLogout: "लॉगआउट",
+                navLogin: "लॉगिन", menuDashboard: "डैशबोर्ड", menuFarms: "खेत प्रबंधन",
+                menuCrops: "फसल प्रबंधन", menuAddExpense: "खर्च जोड़ें", menuAddIncome: "आय जोड़ें",
+                menuTransactions: "लेन-देन इतिहास", menuReports: "रिपोर्ट और विश्लेषण",
+                dashTitle: "कृषि अवलोकन", dashSubtitle: "आय, व्यय और लाभ का वित्तीय रिकॉर्ड",
+                optAllFarms: "सभी खेत", optAllCrops: "सभी फसलें", optAllSeasons: "सभी मौसम",
+                cardTotalIncome: "कुल आय", cardTotalExpense: "कुल व्यय", cardNetProfit: "शुद्ध लाभ",
+                cardTotalLoss: "कुल हानि", cardInvestment: "कुल निवेश", cardActiveCrops: "सक्रिय फसलें",
+                chartIncomeVSExpense: "आय बनाम व्यय (रुपये ₹)", chartExpenseCat: "व्यय विवरण (₹)",
+                titleCropProfitSummary: "फसल वार लाभ और हानि", tblCrop: "फसल", tblFarm: "खेत",
+                tblNetProfitLoss: "शुद्ध लाभ / हानि", btnAddFarm: "नया खेत जोड़ें", btnAddCrop: "नई फसल जोड़ें",
+                lblFarmName: "खेत का नाम", lblArea: "क्षेत्रफल", lblUnit: "इकाई", lblLocation: "स्थान",
+                lblActions: "कार्रवाई", lblCropName: "फसल का नाम", lblSeason: "मौसम",
+                lblSowingDate: "बुआई की तारीख", lblHarvestDate: "कटाई की तारीख", lblDate: "दिनांक",
+                lblCategory: "व्यय श्रेणी", lblAmount: "राशि (₹)", lblPaymentMethod: "भुगतान का तरीका",
+                lblDescription: "विवरण", btnSave: "सहेजें", lblQuantity: "बेची गई मात्रा",
+                lblPricePerUnit: "प्रति इकाई मूल्य (₹)", lblTotalAmount: "कुल बिक्री राशि (₹)",
+                lblBuyer: "खरीदार का विवरण", lblType: "प्रकार", btnClose: "बंद करें",
+                lblReportSummary: "वित्तीय सारांश रिपोर्ट", lblDetailedBreakdown: "श्रेणी वार खर्च"
+            },
+            te: { loginTitle: "రైతు లాగిన్", regTitle: "రైతు నమోదు", lblMobile: "మొబైల్ సంఖ్య", lblPassword: "పాస్‌వర్డ్", btnLogin: "లాగిన్", btnRegister: "ఇక్కడ నమోదు చేసుకోండి", msgNoAccount: "ఖాతా లేదా?", msgHaveAccount: "ఇప్పటికే నమోదు చేసుకున్నారా?", lblFarmerName: "రైతు పేరు", lblEmail: "ఈమెయిల్", lblState: "రాష్ట్రం", lblDistrict: "జిల్లా", lblVillage: "గ్రామం", lblPrefLang: "ప్రాధాన్యత భాష", navProfile: "ప్రొఫైల్", navSettings: "సెట్టింగ్‌లు", navLogout: "లాగౌట్", navLogin: "లాగిన్", menuDashboard: "డాష్‌బోర్డ్", menuFarms: "పొలం నిర్వహణ", menuCrops: "పంట నిర్వహణ", menuAddExpense: "ఖర్చు జోడించు", menuAddIncome: "ఆదాయం జోడించు", menuTransactions: "లావాదేవీల జాబితా", menuReports: "నివేదికలు", dashTitle: "వ్యవసాయ అవలోకనం", dashSubtitle: "ఆదాయం, ఖర్చులు మరియు లాభాల రికార్డు", optAllFarms: "అన్ని పొలాలు", optAllCrops: "అన్ని పంటలు", optAllSeasons: "అన్ని రుతువులు", cardTotalIncome: "మొత్తం ఆదాయం", cardTotalExpense: "మొత్తం ఖర్చులు", cardNetProfit: "నికర లాభం", cardTotalLoss: "మొత్తం నష్టం", cardInvestment: "మొత్తం పెట్టుబడి", cardActiveCrops: "సక్రియ పంటలు", chartIncomeVSExpense: "ఆదాయం వర్సెస్ ఖర్చులు (రూ. ₹)", chartExpenseCat: "ఖర్చు వర్గీకరణ (₹)", titleCropProfitSummary: "పంట వారీగా లాభాలు", tblCrop: "పంట", tblFarm: "పొలం", tblNetProfitLoss: "నికర లాభం / నష్టం", btnAddFarm: "కొత్త పొలం జోడించు", btnAddCrop: "కొత్త పంట జోడించు", lblFarmName: "పొలం పేరు", lblArea: "వైశాల్యం", lblUnit: "యూనిట్", lblLocation: "ప్రాంతం", lblActions: "చర్యలు", lblCropName: "పంట పేరు", lblSeason: "రుతువు", lblSowingDate: "విత్తిన తేదీ", lblHarvestDate: "కోత తేదీ", lblDate: "తేదీ", lblCategory: "ఖర్చు వర్గం", lblAmount: "మొత్తం (₹)", lblPaymentMethod: "చెల్లింపు పద్ధతి", lblDescription: "వివరణ", btnSave: "సేవ్ చేయండి", lblQuantity: "అమ్మిన పరిమాణం", lblPricePerUnit: "యూనిట్ ధర (₹)", lblTotalAmount: "మొత్తం అమ్మకపు మొత్తం (₹)", lblBuyer: "కొనుగోలుదారు వివరాలు", lblType: "రకం", btnClose: "మూసివేయి", lblReportSummary: "ఆ ఆర్థిక నివేదిక సారాంశం", lblDetailedBreakdown: "వర్గం వారీ ఖర్చులు" },
+            ta: { loginTitle: "விவசாயி உள்நுழைவு", regTitle: "விவசாயி பதிவு", lblMobile: "கைபேசி எண்", lblPassword: "கடவுச்சொல்", btnLogin: "உள்நுழை", btnRegister: "பதிவு செய்ய", msgNoAccount: "கணக்கு இல்லையா?", msgHaveAccount: "ஏற்கனவே பதிவு செய்துள்ளீர்களா?", lblFarmerName: "விவசாயி பெயர்", lblEmail: "மின்னஞ்சல்", lblState: "மாநிலம்", lblDistrict: "மாவட்டம்", lblVillage: "கிராமம்", lblPrefLang: "விருப்ப மொழி", navProfile: "சுயவிவரம்", navSettings: "அமைப்புகள்", navLogout: "வெளியேறு", navLogin: "உள்நுழை", menuDashboard: "முகப்பு", menuFarms: "பண்ணை மேலாண்மை", menuCrops: "பயிர் மேலாண்மை", menuAddExpense: "செலவு சேர்க்க", menuAddIncome: "வருமானம் சேர்க்க", menuTransactions: "பரிவர்த்தனைகள்", menuReports: "அறிக்கைகள்", dashTitle: "விவசாய கண்ணோட்டம்", dashSubtitle: "வருமானம், செலவு மற்றும் லாப விவரங்கள்", optAllFarms: "அனைத்து பண்ணைகள்", optAllCrops: "அனைத்து பயிர்கள்", optAllSeasons: "அனைத்து பருவங்கள்", cardTotalIncome: "மொத்த வருமானம்", cardTotalExpense: "மொத்த செலவுகள்", cardNetProfit: "எஞ்சிய லாபம்", cardTotalLoss: "மொத்த நஷ்டம்", cardInvestment: "மொத்த முதலீடு", cardActiveCrops: "செயலில் உள்ள பயிர்கள்", chartIncomeVSExpense: "வருமானம் vs செலவு (₹)", chartExpenseCat: "செலவு விவரம் (₹)", titleCropProfitSummary: "பயிர் வாரியான லாப அறிக்கை", tblCrop: "பயிர்", tblFarm: "பண்ணை", tblNetProfitLoss: "லாபம் / நஷ்டம்", btnAddFarm: "புதிய பண்ணை சேர்க்க", btnAddCrop: "புதிய பயிர் சேர்க்க", lblFarmName: "பண்ணை பெயர்", lblArea: "பரப்பளவு", lblUnit: "அலகு", lblLocation: "இடம்", lblActions: "நடவடிக்கைகள்", lblCropName: "பயிர் பெயர்", lblSeason: "பருவம்", lblSowingDate: "விதைத்த தேதி", lblHarvestDate: "அறுவடை தேதி", lblDate: "தேதி", lblCategory: "செலவு வகை", lblAmount: "தொகை (₹)", lblPaymentMethod: "செலுத்தல் முறை", lblDescription: "விளக்கம்", btnSave: "சேமி", lblQuantity: "விற்பனை அளவு", lblPricePerUnit: "அலகு விலை (₹)", lblTotalAmount: "மொத்த விற்பனை (₹)", lblBuyer: "வாங்குபவர் விவரம்", lblType: "வகை", btnClose: "மூடு", lblReportSummary: "நிதி அறிக்கை சுருக்கம்", lblDetailedBreakdown: "வகை வாரியான செலவு" },
+            ml: { loginTitle: "കർഷക ലോഗിൻ", regTitle: "കർഷക രജിസ്ട്രേഷൻ", lblMobile: "മൊബൈൽ നമ്പർ", lblPassword: "പാസ്‌വേഡ്", btnLogin: "ലോഗിൻ", btnRegister: "രജിസ്റ്റർ ചെയ്യുക", msgNoAccount: "അക്കൗണ്ട് ഇല്ലേ?", msgHaveAccount: "മുമ്പ് രജിസ്റ്റർ ചെയ്തതാണോ?", lblFarmerName: "കർഷകന്റെ പേര്", lblEmail: "ഇമെയിൽ", lblState: "സംസ്ഥാനം", lblDistrict: "ജില്ല", lblVillage: "ഗ്രാമം", lblPrefLang: "ഭാഷ", navProfile: "പ്രൊഫൈൽ", navSettings: "ക്രമീകരണങ്ങൾ", navLogout: "ലോഗൗട്ട്", navLogin: "ലോഗിൻ", menuDashboard: "ഡാഷ്‌ബോർഡ്", menuFarms: "ഫാം മാനേജ്‌മെന്റ്", menuCrops: "വിള മാനേജ്‌മെന്റ്", menuAddExpense: "ചെലവ് ചേർക്കുക", menuAddIncome: "വരുമാനം ചേർക്കുക", menuTransactions: "ഇടപാടുകൾ", menuReports: "റിപ്പോർട്ടുകൾ", dashTitle: "കാർഷിക അവലോകനം", dashSubtitle: "വരുമാനവും ചെലവും ലാഭവും", optAllFarms: "എല്ലാ ഫാമുകളും", optAllCrops: "എല്ലാ വിളകളും", optAllSeasons: "എല്ലാ സീസണുകളും", cardTotalIncome: "ആകെ വരുമാനം", cardTotalExpense: "ആകെ ചെലവുകൾ", cardNetProfit: "അറ്റാദായം", cardTotalLoss: "ആകെ നഷ്ടം", cardInvestment: "ആകെ നിക്ഷേപം", cardActiveCrops: "നിലവിലെ വിളകൾ", chartIncomeVSExpense: "വരുമാനവും ചെലവും (₹)", chartExpenseCat: "ചെലവ് വിഭജനം (₹)", titleCropProfitSummary: "വിള അടിസ്ഥാനമാക്കിയുള്ള ലാഭം", tblCrop: "വിള", tblFarm: "ഫാം", tblNetProfitLoss: "ലാഭം / നഷ്ടം", btnAddFarm: "പുതിയ ഫാം ചേർക്കുക", btnAddCrop: "പുതിയ വിള ചേർക്കുക", lblFarmName: "ഫാമിന്റെ പേര്", lblArea: "വിസ്തീർണ്ണം", lblUnit: "യൂണിറ്റ്", lblLocation: "സ്ഥലം", lblActions: "നടപടികൾ", lblCropName: "വിളയുടെ പേര്", lblSeason: "സീസൺ", lblSowingDate: "വിത്തുപാകിയ തീയതി", lblHarvestDate: "വിളവെടുപ്പ് തീയതി", lblDate: "തീയതി", lblCategory: "ചെലവ് വിഭാഗം", lblAmount: "തുക (₹)", lblPaymentMethod: "പണമടയ്ക്കൽ രീതി", lblDescription: "വിവരണം", btnSave: "സേവ് ചെയ്യുക", lblQuantity: "വിറ്റ അളവ്", lblPricePerUnit: "യൂണിറ്റ് വില (₹)", lblTotalAmount: "ആകെ വിൽപ്പന തുക (₹)", lblBuyer: "വാങ്ങിയ ആളുടെ വിവരങ്ങൾ", lblType: "ഇനം", btnClose: "അടയ്ക്കുക", lblReportSummary: "സാമ്പത്തിക റിപ്പോർട്ട്", lblDetailedBreakdown: "വിഭാഗം തിരിച്ചുള്ള ചെലവുകൾ" },
+            mr: { loginTitle: "शेतकरी लॉगिन", regTitle: "शेतकरी नोंदणी", lblMobile: "मोबाईल नंबर", lblPassword: "पासवर्ड", btnLogin: "लॉगिन करा", btnRegister: "येथे नोंदणी करा", msgNoAccount: "खाते नाही?", msgHaveAccount: "आधीच नोंदणी केली आहे?", lblFarmerName: "शेतकऱ्याचे नाव", lblEmail: "ईमेल", lblState: "राज्य", lblDistrict: "जिल्हा", lblVillage: "गाव", lblPrefLang: "पसंतीची भाषा", navProfile: "प्रोफाइल", navSettings: "सेटिंग्ज", navLogout: "लॉगआउट", navLogin: "लॉगिन", menuDashboard: "डॅशबोर्ड", menuFarms: "शेती व्यवस्थापन", menuCrops: "पिक व्यवस्थापन", menuAddExpense: "खर्च जोडा", menuAddIncome: "उत्पन्न जोडा", menuTransactions: "व्यवहार नोंद", menuReports: "अहवाल आणि विश्लेषण", dashTitle: "शेती आढावा", dashSubtitle: "उत्पन्न, खर्च आणि नफा यांचा आर्थिक हिशोब", optAllFarms: "सर्व शेते", optAllCrops: "सर्व पिके", optAllSeasons: "सर्व हंगाम", cardTotalIncome: "एकूण उत्पन्न", cardTotalExpense: "एकूण खर्च", cardNetProfit: "निव्वळ नफा", cardTotalLoss: "एकूण तोटा", cardInvestment: "एकूण गुंतवणूक", cardActiveCrops: "सक्रिय पिके", chartIncomeVSExpense: "उत्पन्न विरुद्ध खर्च (रुपये ₹)", chartExpenseCat: "खर्च वर्गीकरण (₹)", titleCropProfitSummary: "पीकनिहाय नफा-तोटा", tblCrop: "पीक", tblFarm: "शेत", tblNetProfitLoss: "निव्वळ नफा / तोटा", btnAddFarm: "नवीन शेत जोडा", btnAddCrop: "नवीन पीक जोडा", lblFarmName: "शेताचे नाव", lblArea: "क्षेत्रफळ", lblUnit: "एकक", lblLocation: "ठिकाण", lblActions: "कृती", lblCropName: "पिकाचे नाव", lblSeason: "हंगाम", lblSowingDate: "पेरणीची तारीख", lblHarvestDate: "काढणीची तारीख", lblDate: "तारीख", lblCategory: "खर्चाचा प्रकार", lblAmount: "रक्कम (₹)", lblPaymentMethod: "पेमेंट पद्धत", lblDescription: "तपशील", btnSave: "जतन करा", lblQuantity: "विकलेली माहिती", lblPricePerUnit: "दर प्रति एकक (₹)", lblTotalAmount: "एकूण विक्री रक्कम (₹)", lblBuyer: "ग्राहक तपशील", lblType: "प्रकार", btnClose: "बंद करा", lblReportSummary: "आर्थिक अहवाल सारांश", lblDetailedBreakdown: "प्रकारनिहाय खर्च" },
+            bn: { loginTitle: "কৃষক লগইন", regTitle: "কৃষক নিবন্ধন", lblMobile: "মোবাইল নম্বর", lblPassword: "পাসওয়ার্ড", btnLogin: "লগইন করুন", btnRegister: "নিবন্ধন করুন", msgNoAccount: "অ্যাকাউন্ট নেই?", msgHaveAccount: "ইতিমধ্যে নিবন্ধিত?", lblFarmerName: "কৃষকের নাম", lblEmail: "ইমেল", lblState: "রাজ্য", lblDistrict: "জেলা", lblVillage: "গ্রাম", lblPrefLang: "পছন্দের ভাষা", navProfile: "প্রোফাইল", navSettings: "সেটিংস", navLogout: "লগআউট", navLogin: "লগইন", menuDashboard: "ড্যাশবোর্ড", menuFarms: "খামার ব্যবস্থাপনা", menuCrops: "ফসল ব্যবস্থাপনা", menuAddExpense: "খরচ যোগ করুন", menuAddIncome: "আয় যোগ করুন", menuTransactions: "লেনদেন তালিকা", menuReports: "প্রতিবেদন", dashTitle: "কৃষি ওভারভিউ", dashSubtitle: "আয়, ব্যয় এবং লাভের হিসাব", optAllFarms: "সমস্ত খামার", optAllCrops: "সমস্ত ফসল", optAllSeasons: "সমস্ত ঋতু", cardTotalIncome: "মোট আয়", cardTotalExpense: "মোট ব্যয়", cardNetProfit: "নিট লাভ", cardTotalLoss: "মোট ক্ষতি", cardInvestment: "মোট বিনিয়োগ", cardActiveCrops: "সক্রিয় ফসল", chartIncomeVSExpense: "আয় বনাম ব্যয় (টাকা ₹)", chartExpenseCat: "ব্যয়ের বিবরণ (₹)", titleCropProfitSummary: "ফসল অনুযায়ী লাভের হিসাব", tblCrop: "ফসল", tblFarm: "খামার", tblNetProfitLoss: "নিট লাভ / ক্ষতি", btnAddFarm: "নতুন খামার যোগ করুন", btnAddCrop: "নতুন ফসল যোগ করুন", lblFarmName: "খামারের নাম", lblArea: "জমির পরিমাণ", lblUnit: "একক", lblLocation: "অবস্থান", lblActions: "পদক্ষেপ", lblCropName: "ফসলের নাম", lblSeason: "ঋতু", lblSowingDate: "বোপনের তারিখ", lblHarvestDate: "কাটার তারিখ", lblDate: "তারিখ", lblCategory: "ব্যয়ের বিভাগ", lblAmount: "পরিমাণ (₹)", lblPaymentMethod: "পেমেন্ট মাধ্যম", lblDescription: "বিবরণ", btnSave: "সংরক্ষণ করুন", lblQuantity: "বিক্রয়ের পরিমাণ", lblPricePerUnit: "একক প্রতি মূল্য (₹)", lblTotalAmount: "মোট বিক্রয় মূল্য (₹)", lblBuyer: "ক্রেতার বিবরণ", lblType: "ধরণ", btnClose: "বন্ধ করুন", lblReportSummary: "আর্থিক বিবরণী রিপোর্ট", lblDetailedBreakdown: "বিভাগ ভিত্তিক ব্যয়" },
+            gu: { loginTitle: "ખેડૂત લોગિન", regTitle: "ખેડૂત નોંધણી", lblMobile: "મોબાઇલ નંબર", lblPassword: "પાસવર્ડ", btnLogin: "લોગિન કરો", btnRegister: "અહીં નોંધણી કરો", msgNoAccount: "ખાતું નથી?", msgHaveAccount: "પહેલેથી જ નોંધાયેલ છે?", lblFarmerName: "ખેડૂતનું નામ", lblEmail: "ઇમેઇલ", lblState: "રાજ્ય", lblDistrict: "જિલ્લો", lblVillage: "ગામ", lblPrefLang: "પસંદગીની ભાષા", navProfile: "પ્રોફાઇલ", navSettings: "સેટિંગ્સ", navLogout: "લોગઆઉટ", navLogin: "લોગિન", menuDashboard: "ડેશબોર્ડ", menuFarms: "ખેતર વ્યવસ્થાપન", menuCrops: "પાક વ્યવસ્થાપન", menuAddExpense: "ખર્ચ ઉમેરો", menuAddIncome: "આવક ઉમેરો", menuTransactions: "વ્યવહાર ઇતિહાસ", menuReports: "રિપોર્ટ", dashTitle: "ખેતી અવલોકન", dashSubtitle: "આવક, ખર્ચ અને નફાનો હિસાબ", optAllFarms: "તમામ ખેતરો", optAllCrops: "તમામ પાકો", optAllSeasons: "તમામ ઋતુઓ", cardTotalIncome: "કુલ આવક", cardTotalExpense: "કુલ ખર્ચ", cardNetProfit: "ચોખ્ખો નફો", cardTotalLoss: "કુલ નુકસાન", cardInvestment: "કુલ રોકાણ", cardActiveCrops: "સક્રિય પાક", chartIncomeVSExpense: "આવક વિરુદ્ધ ખર્ચ (રૂ. ₹)", chartExpenseCat: "ખર્ચ વર્ગીકરણ (₹)", titleCropProfitSummary: "પાક વાઇઝ નફાનું વિવરણ", tblCrop: "પાક", tblFarm: "ખેતર", tblNetProfitLoss: "ચોખ્ખો નફો / નુકસાન", btnAddFarm: "નવું ખેતર ઉમેરો", btnAddCrop: "નવો પાક ઉમેરો", lblFarmName: "ખેતરનું નામ", lblArea: "વિસ્તાર", lblUnit: "એકમ", lblLocation: "સ્થળ", lblActions: "ક્રિયાઓ", lblCropName: "પાકનું નામ", lblSeason: "ઋતુ", lblSowingDate: "વાવણીની તારીખ", lblHarvestDate: "લણણીની તારીખ", lblDate: "તારીખ", lblCategory: "ખર્ચનો પ્રકાર", lblAmount: "રકમ (₹)", lblPaymentMethod: "ચુકવણીની પદ્ધતિ", lblDescription: "વિગત", btnSave: "સાચવો", lblQuantity: "વેચેલ જથ્થો", lblPricePerUnit: "એકમ દીઠ ભાવ (₹)", lblTotalAmount: "કુલ વેચાણ રકમ (₹)", lblBuyer: "ગ્રાહકની વિગત", lblType: "પ્રકાર", btnClose: "બંધ કરો", lblReportSummary: "નાણાકીય અહેવાલ સારાંશ", lblDetailedBreakdown: "પ્રકાર મુજબ ખર્ચ" },
+            pa: { loginTitle: "ਕਿਸਾਨ ਲੌਗਇਨ", regTitle: "ਕਿਸਾਨ ਰਜਿਸਟ੍ਰੇਸ਼ਨ", lblMobile: "ਮੋਬਾਈਲ ਨੰਬਰ", lblPassword: "ਪਾਸਵਰਡ", btnLogin: "ਲੌਗਇਨ ਕਰੋ", btnRegister: "ਇੱਥੇ ਰਜਿਸਟਰ ਕਰੋ", msgNoAccount: "ਖਾਤਾ ਨਹੀਂ ਹੈ?", msgHaveAccount: "ਪਹਿਲਾਂ ਹੀ ਰਜਿਸਟਰਡ ਹੋ?", lblFarmerName: "ਕਿਸਾਨ ਦਾ ਨਾਮ", lblEmail: "ਈਮੇਲ", lblState: "ਰਾਜ", lblDistrict: "ਜ਼ਿਲ੍ਹਾ", lblVillage: "ਪਿੰਡ", lblPrefLang: "ਮਨਪਸੰਦ ਭਾਸ਼ਾ", navProfile: "ਪ੍ਰੋਫਾਈਲ", navSettings: "ਸੈਟਿੰਗਾਂ", navLogout: "ਲੌਗਆਊਟ", navLogin: "ਲੌਗਇਨ", menuDashboard: "ਡੈਸ਼ਬੋਰਡ", menuFarms: "ਖੇਤ ਪ੍ਰਬੰਧਨ", menuCrops: "ਫਸਲ ਪ੍ਰਬੰਧਨ", menuAddExpense: "ਖਰਚਾ ਜੋੜੋ", menuAddIncome: "ਆਮਦਨ ਜੋੜੋ", menuTransactions: "ਲੈਣ-ਦੇਣ ਦਾ ਇਤਿਹਾਸ", menuReports: "ਰਿਪੋਰਟਾਂ", dashTitle: "ਖੇਤੀਬਾੜੀ ਦਾ ਵੇਰਵਾ", dashSubtitle: "ਆਮਦਨ, ਖਰਚੇ ਅਤੇ ਮੁਨਾਫੇ ਦਾ ਹਿਸਾਬ", optAllFarms: "ਸਾਰੇ ਖੇਤ", optAllCrops: "ਸਾਰੀਆਂ ਫਸਲਾਂ", optAllSeasons: "ਸਾਰੇ ਸੀਜ਼ਨ", cardTotalIncome: "ਕੁੱਲ ਆਮਦਨ", cardTotalExpense: "ਕੁੱਲ ਖਰਚੇ", cardNetProfit: "ਸ਼ੁੱਧ ਮੁਨਾਫਾ", cardTotalLoss: "ਕੁੱਲ ਘਾਟਾ", cardInvestment: "ਕੁੱਲ ਨਿਵੇਸ਼", cardActiveCrops: "ਮੌਜੂਦਾ ਫਸਲਾਂ", chartIncomeVSExpense: "ਆਮਦਨ ਬਨਾਮ ਖਰਚਾ (ਰੁਪਏ ₹)", chartExpenseCat: "ਖਰਚਿਆਂ ਦਾ ਵੇਰਵਾ (₹)", titleCropProfitSummary: "ਫਸਲ ਵਾਰ ਮੁਨਾਫੇ ਦਾ ਵੇਰਵਾ", tblCrop: "ਫਸਲ", tblFarm: "ਖੇਤ", tblNetProfitLoss: "ਸ਼ੁੱਧ ਮੁਨਾਫਾ / ਘਾਟਾ", btnAddFarm: "ਨਵਾਂ ਖੇਤ ਜੋੜੋ", btnAddCrop: "ਨਵੀਂ ਫਸਲ ਜੋੜੋ", lblFarmName: "ਖੇਤ ਦਾ ਨਾਮ", lblArea: "ਖੇਤਰਫਲ", lblUnit: "ਇਕਾਈ", lblLocation: "ਸਥਾਨ", lblActions: "ਕਾਰਵਾਈ", lblCropName: "ਫਸਲ ਦਾ ਨਾਮ", lblSeason: "ਸੀਜ਼ਨ", lblSowingDate: "ਬੀਜਣ ਦੀ ਮਿਤੀ", lblHarvestDate: "ਕਟਾਈ ਦੀ ਮਿਤੀ", lblDate: "ਮਿਤੀ", lblCategory: "ਖਰਚੇ ਦੀ ਸ਼੍ਰੇਣੀ", lblAmount: "ਰਕਮ (₹)", lblPaymentMethod: "ਭੁਗਤਾਨ ਦਾ ਤਰੀਕਾ", lblDescription: "ਵੇਰਵਾ", btnSave: "ਸੰਭਾਲੋ", lblQuantity: "ਵੇਚੀ ਗਈ ਮਾਤਰਾ", lblPricePerUnit: "ਪ੍ਰਤੀ ਇਕਾਈ ਕੀਮਤ (₹)", lblTotalAmount: "ਕੁੱਲ ਵਿਕਰੀ ਰਕਮ (₹)", lblBuyer: "ਖਰੀਦਦਾਰ ਦਾ ਵੇਰਵਾ", lblType: "ਕਿਸਮ", btnClose: "ਬੰਦ ਕਰੋ", lblReportSummary: "ਵਿੱਤੀ ਰਿਪੋਰਟ ਦਾ ਸਾਰ", lblDetailedBreakdown: "ਸ਼੍ਰੇਣੀ ਵਾਰ ਖਰਚੇ" },
+            or: { loginTitle: "କୃଷକ ଲଗଇନ୍", regTitle: "କୃଷକ ପଞ୍ଜୀକରଣ", lblMobile: "ମୋବାଇଲ୍ ନମ୍ବର", lblPassword: "ପାସୱାର୍ଡ", btnLogin: "ଲଗଇନ୍ କରନ୍ତୁ", btnRegister: "ଏଠାରେ ପଞ୍ଜୀକରଣ କରନ୍ତୁ", msgNoAccount: "ଆକାଉଣ୍ଟ୍ ନାହିଁ?", msgHaveAccount: "ପୂର୍ବରୁ ପଞ୍ଜୀକୃତ କି?", lblFarmerName: "କୃଷକଙ୍କ ନାମ", lblEmail: "ଇମେଲ୍", lblState: "ରାଜ୍ୟ", lblDistrict: "ଜିଲ୍ଲା", lblVillage: "ଗ୍ରାମ", lblPrefLang: "ପସନ୍ଦର ଭାଷା", navProfile: "ପ୍ରୋଫାଇଲ୍", navSettings: "ସେଟିଂସ", navLogout: "ଲଗଆଉଟ୍", navLogin: "ଲଗଇନ୍", menuDashboard: "ଡ୍ୟାସବୋର୍ଡ", menuFarms: "ଜମି ପରିଚାଳନା", menuCrops: "ଫସଲ ପରିଚାଳନା", menuAddExpense: "ଖର୍ଚ୍ଚ ଯୋଡନ୍ତୁ", menuAddIncome: "ଆୟ ଯୋଡନ୍ତୁ", menuTransactions: "କାରବାର ତାଲିକା", menuReports: "ରିପୋର୍ଟ", dashTitle: "କୃଷି ବିବରଣୀ", dashSubtitle: "ଆୟ, ଖର୍ଚ୍ଚ ଏବଂ ଲାଭର ହିସାବ", optAllFarms: "ସମସ୍ତ ଜମି", optAllCrops: "ସମସ୍ତ ଫସଲ", optAllSeasons: "ସମସ୍ତ ଋତୁ", cardTotalIncome: "ମୋଟ ଆୟ", cardTotalExpense: "ମୋଟ ଖର୍ଚ୍ଚ", cardNetProfit: "ନିଟ୍ ଲାଭ", cardTotalLoss: "ମୋଟ କ୍ଷତି", cardInvestment: "ମୋଟ ନିବେଶ", cardActiveCrops: "ସକ୍ରିୟ ଫସଲ", chartIncomeVSExpense: "ଆୟ ବନାମ ଖର୍ଚ୍ଚ (ଟଙ୍କା ₹)", chartExpenseCat: "ଖର୍ଚ୍ଚ ବିବରଣୀ (₹)", titleCropProfitSummary: "ଫସଲ ୱାରୀ ଲାଭ ହିସାବ", tblCrop: "ଫସଲ", tblFarm: "ଜମି", tblNetProfitLoss: "ନିଟ୍ ଲାଭ / କ୍ଷତି", btnAddFarm: "ନୂଆ ଜମି ଯୋଡନ୍ତୁ", btnAddCrop: "ନୂଆ ଫସଲ ଯୋଡନ୍ତୁ", lblFarmName: "ଜମିର ନାମ", lblArea: "କ୍ଷେତ୍ରଫଳ", lblUnit: "ଏକକ", lblLocation: "ସ୍ଥାନ", lblActions: "କାର୍ଯ୍ୟାନୁଷ୍ଠାନ", lblCropName: "ଫସଲର ନାମ", lblSeason: "ଋତୁ", lblSowingDate: "ବୁଣା ତାରିଖ", lblHarvestDate: "ଅମଳ ତାରିଖ", lblDate: "ତାରିଖ", lblCategory: "ଖର୍ଚ୍ଚର ବର୍ଗ", lblAmount: "ପରିମାଣ (₹)", lblPaymentMethod: "ପରିଶୋଧ ପ୍ରଣାଳୀ", lblDescription: "ବିବରଣୀ", btnSave: "ସଂରକ୍ଷଣ କରନ୍ତୁ", lblQuantity: "ବିକ୍ରି ପରିମାଣ", lblPricePerUnit: "ଏକକ ପିଛା ମୂଲ୍ୟ (₹)", lblTotalAmount: "ମୋଟ ବିକ୍ରି ମୂଲ୍ୟ (₹)", lblBuyer: "କ୍ରେତାଙ୍କ ବିବରଣୀ", lblType: "ପ୍ରକାର", btnClose: "ବନ୍ଦ କରନ୍ତୁ", lblReportSummary: "ଆର୍ଥିକ ରିପୋର୍ଟ ସାରାଂଶ", lblDetailedBreakdown: "ବର୍ଗ ୱାରୀ ଖର୍ଚ୍ଚ" },
+            as: { loginTitle: "কৃষক লগইন", regTitle: "কৃষক পঞ্জীয়ন", lblMobile: "মোবাইল নম্বৰ", lblPassword: "পাছৱৰ্ড", btnLogin: "লগইন কৰক", btnRegister: "ইয়াত পঞ্জীয়ন কৰক", msgNoAccount: "একাউণ্ট নাই নেকি?", msgHaveAccount: "ইতিমধ্যে পঞ্জীয়নভুক্ত?", lblFarmerName: "কৃষকৰ নাম", lblEmail: "ইমেইল", lblState: "ৰাজ্য", lblDistrict: "জিলা", lblVillage: "গাঁও", lblPrefLang: "পছন্দৰ ভাষা", navProfile: "প্রফাইল", navSettings: "ছেটিংছ", navLogout: "লগআউট", navLogin: "লগইন", menuDashboard: "ডেশ্ববৰ্ড", menuFarms: "পাম ব্যৱস্থাপনা", menuCrops: "শস্য ব্যৱস্থাপনা", menuAddExpense: "খৰচ যোগ কৰক", menuAddIncome: "আয় যোগ কৰক", menuTransactions: "লেনদেন তালিকা", menuReports: "প্ৰতিবেদন", dashTitle: "কৃষি ಅವলোकন", dashSubtitle: "আয়, ব্যয় আৰু লাভৰ হিচাপ", optAllFarms: "সকলো পাম", optAllCrops: "সকলো শস্য", optAllSeasons: "সকলো ঋতু", cardTotalIncome: "মুঠ আয়", cardTotalExpense: "মুঠ ব্যয়", cardNetProfit: "নিট লাভ", cardTotalLoss: "মুঠ লোকচান", cardInvestment: "মুঠ বিনিয়োগ", cardActiveCrops: "সক্ৰিয় শস্য", chartIncomeVSExpense: "আয় বনাম ব্যয় (টকা ₹)", chartExpenseCat: "ব্যয়ৰ বিভাজন (₹)", titleCropProfitSummary: "শস্য ভিত্তিক লাভৰ হিচাপ", tblCrop: "শস্য", tblFarm: "পাম", tblNetProfitLoss: "নিট লাভ / লোকচান", btnAddFarm: "নতুন পাম যোগ কৰক", btnAddCrop: "নতুন শস্য যোগ কৰক", lblFarmName: "পামৰ নাম", lblArea: "কালি", lblUnit: "একক", lblLocation: "স্থান", lblActions: "কাৰ্য্য", lblCropName: "শস্যৰ নাম", lblSeason: "ঋতু", lblSowingDate: "ৰোপণৰ তারিখ", lblHarvestDate: "কটাৰ তারিখ", lblDate: "তারিখ", lblCategory: "ব্যয়ৰ শ্ৰেণী", lblAmount: "পৰিমাণ (₹)", lblPaymentMethod: "পৰিশোধৰ পদ্ধতি", lblDescription: "বিৱৰণ", btnSave: "সংৰক্ষণ কৰক", lblQuantity: "বিক্ৰীৰ পৰিমাণ", lblPricePerUnit: "প্রতি এককৰ মূল্য (₹)", lblTotalAmount: "মুঠ বিক্রয় মূল্য (₹)", lblBuyer: "ক্রেতাৰ বিৱৰণ", lblType: "প্রকার", btnClose: "বন্ধ কৰক", lblReportSummary: "বিত্তীয় প্ৰতিবেদনৰ সাৰাংশ", lblDetailedBreakdown: "শ্ৰেণী ভিত্তিক ব্যয়" }
+        };
+
+        let currentLang = 'en';
+
+        // -------------------------------------------------------------
+        // 2. Cloud Data Store Initialization (Firebase Firestore)
+        // -------------------------------------------------------------
+        const firebaseConfig = {
+            apiKey: "AIzaSyDO-TeBjd4MRJZku140NYwei80rwtjxxSI",
+            authDomain: "farmtrack-1cf8f.firebaseapp.com",
+            projectId: "farmtrack-1cf8f",
+            storageBucket: "farmtrack-1cf8f.firebasestorage.app",
+            messagingSenderId: "191726511914",
+            appId: "1:191726511914:web:91986813d7943d28e0a053",
+            measurementId: "G-HR6C8EM3SB"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        
+        // Target a single cloud document to act exactly like our old local storage
+        const cloudStorageRef = db.collection("farmtrack_db").doc("main_storage");
+
+        // Initialize empty state while we wait for the cloud
+        let appData = {
+            currentUser: null, farmers: [], farms: [], crops: [], expenses: [], incomes: []
+        };
+
+        // Fetch data from Cloud when the app loads
+        cloudStorageRef.get().then((doc) => {
+            if (doc.exists) {
+                appData = doc.data(); // Load existing cloud data
+            } else {
+                saveData(); // Save empty structure if brand new
+            }
+
+            // SECURITY ENFORCEMENT: Always force the user to the login screen on startup
+            appData.currentUser = null;
+            updateAuthStateUI();
+            switchView('login');
+            
+        }).catch((error) => {
+            console.error("Error connecting to cloud database:", error);
+            alert("Database connection failed. Please check your internet.");
+        });
+
+        // The new saveData function sends the data to the cloud instead of the browser
+        function saveData() {
+            cloudStorageRef.set(appData).catch((error) => {
+                console.error("Error saving to cloud: ", error);
+            });
+        }
+
+        // -------------------------------------------------------------
+        // 3. Navigation & Views Switching Logic
+        // -------------------------------------------------------------
+        function switchView(viewName) {
+            const views = ['login', 'register', 'dashboard', 'farms', 'crops', 'add-expense', 'add-income', 'transactions', 'reports', 'profile'];
+            views.forEach(v => {
+                const el = document.getElementById(`view-${v}`);
+                if (el) el.classList.add('hidden-view');
+                const navBtn = document.getElementById(`nav-${v}`);
+                if (navBtn) navBtn.classList.remove('active');
+            });
+
+            const targetView = document.getElementById(`view-${viewName}`);
+            if (targetView) targetView.classList.remove('hidden-view');
+
+            const targetNav = document.getElementById(`nav-${viewName}`);
+            if (targetNav) targetNav.classList.add('active');
+
+            // Render view dynamic content
+            if (viewName === 'dashboard') renderDashboard();
+            if (viewName === 'farms') renderFarms();
+            if (viewName === 'crops') renderCrops();
+            if (viewName === 'add-expense') prepareExpenseForm();
+            if (viewName === 'add-income') prepareIncomeForm();
+            if (viewName === 'transactions') renderTransactions();
+            if (viewName === 'reports') renderReports();
+            if (viewName === 'profile') renderProfile();
+        }
+
+        function updateAuthStateUI() {
+            const loggedIn = appData.currentUser !== null;
+            document.querySelectorAll('.auth-logged-in').forEach(el => {
+                if (loggedIn) el.classList.remove('hidden-view');
+                else el.classList.add('hidden-view');
+            });
+            document.querySelectorAll('.auth-logged-out').forEach(el => {
+                if (!loggedIn) el.classList.remove('hidden-view');
+                else el.classList.add('hidden-view');
+            });
+
+            if (loggedIn) {
+                document.getElementById('navFarmerName').innerText = appData.currentUser.name;
+                changeLanguage(appData.currentUser.preferredLanguage || 'en');
+            }
+        }
+
+        // -------------------------------------------------------------
+        // 4. Internationalization (i18n) Engine
+        // -------------------------------------------------------------
+        function changeLanguage(langCode) {
+            currentLang = langCode;
+            document.getElementById('langSelect').value = langCode;
+
+            if (appData.currentUser) {
+                appData.currentUser.preferredLanguage = langCode;
+                saveData();
+            }
+
+            const dict = i18n[langCode] || i18n['en'];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (dict[key]) {
+                    el.innerText = dict[key];
+                }
+            });
+
+            // Re-render active dynamic dynamic components
+            if (appData.currentUser) {
+                renderDashboard();
+            }
+        }
+
+        // -------------------------------------------------------------
+        // 5. Authentication (Login / Register / Logout)
+        // -------------------------------------------------------------
+        function handleLogin(e) {
+            e.preventDefault();
+            const mob = document.getElementById('loginMobile').value.trim();
+            const pass = document.getElementById('loginPassword').value.trim();
+
+            const farmer = appData.farmers.find(f => f.mobile === mob && f.password === pass);
+            if (farmer) {
+                appData.currentUser = farmer;
+                saveData();
+                updateAuthStateUI();
+                switchView('dashboard');
+            } else {
+                alert('Invalid Mobile Number or Password.');
+            }
+        }
+
+        function handleRegister(e) {
+            e.preventDefault();
+            const mobileInput = document.getElementById('regMobile').value.trim();
+            
+            // SECURITY FIX: Check if this mobile number is already in the database
+            const existingFarmer = appData.farmers.find(f => f.mobile === mobileInput);
+            if (existingFarmer) {
+                alert('This mobile number is already registered. Please login instead or use a different number.');
+                return; // Stop the registration process immediately
+            }
+
+            const newFarmer = {
+                id: 'FARMER_' + Date.now(),
+                name: document.getElementById('regName').value.trim(),
+                mobile: mobileInput,
+                email: document.getElementById('regEmail').value.trim(),
+                state: document.getElementById('regState').value.trim(),
+                district: document.getElementById('regDistrict').value.trim(),
+                village: document.getElementById('regVillage').value.trim(),
+                preferredLanguage: document.getElementById('regLang').value,
+                password: document.getElementById('regPassword').value.trim()
+            };
+
+            appData.farmers.push(newFarmer);
+            appData.currentUser = newFarmer;
+            saveData();
+            updateAuthStateUI();
+            switchView('dashboard');
+        }
+
+        function logout() {
+            appData.currentUser = null;
+            saveData();
+            updateAuthStateUI();
+            switchView('login');
+        }
+
+        // -------------------------------------------------------------
+        // 6. Dashboard & Charts Computation (Monetary ₹ Display)
+        // -------------------------------------------------------------
+        let chartInstanceIncomeExpense = null;
+        let chartInstanceExpenseCat = null;
+
+        function renderDashboard() {
+            if (!appData.currentUser) return;
+            const farmerId = appData.currentUser.id;
+
+            // Populate Filter Selectors
+            const farmFilter = document.getElementById('filterFarm');
+            const cropFilter = document.getElementById('filterCrop');
+            const seasonFilter = document.getElementById('filterSeason').value;
+
+            // Save currently selected values
+            const selectedFarm = farmFilter.value || "ALL";
+            const selectedCrop = cropFilter.value || "ALL";
+
+            // Refill Farms Dropdown
+            farmFilter.innerHTML = `<option value="ALL">${i18n[currentLang].optAllFarms || 'All Farms'}</option>`;
+            const userFarms = appData.farms.filter(f => f.farmerId === farmerId);
+            userFarms.forEach(f => {
+                farmFilter.innerHTML += `<option value="${f.id}">${f.name}</option>`;
+            });
+            farmFilter.value = selectedFarm;
+
+            // Refill Crops Dropdown
+            cropFilter.innerHTML = `<option value="ALL">${i18n[currentLang].optAllCrops || 'All Crops'}</option>`;
+            const userFarmIds = userFarms.map(f => f.id);
+            const userCrops = appData.crops.filter(c => userFarmIds.includes(c.farmId));
+            userCrops.forEach(c => {
+                cropFilter.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+            });
+            cropFilter.value = selectedCrop;
+
+            // Filter Transactions
+            let expList = appData.expenses.filter(e => e.farmerId === farmerId);
+            let incList = appData.incomes.filter(i => i.farmerId === farmerId);
+
+            if (selectedFarm !== 'ALL') {
+                expList = expList.filter(e => e.farmId === selectedFarm);
+                incList = incList.filter(i => i.farmId === selectedFarm);
+            }
+            if (selectedCrop !== 'ALL') {
+                expList = expList.filter(e => e.cropId === selectedCrop);
+                incList = incList.filter(i => i.cropId === selectedCrop);
+            }
+            if (seasonFilter !== 'ALL') {
+                const seasonCropIds = userCrops.filter(c => c.season === seasonFilter).map(c => c.id);
+                expList = expList.filter(e => seasonCropIds.includes(e.cropId));
+                incList = incList.filter(i => seasonCropIds.includes(i.cropId));
+            }
+
+            // Monetary Computations
+            const totalIncome = incList.reduce((sum, i) => sum + parseFloat(i.amount || 0), 0);
+            const totalExpenses = expList.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+            const netProfit = Math.max(0, totalIncome - totalExpenses);
+            const totalLoss = totalExpenses > totalIncome ? (totalExpenses - totalIncome) : 0;
+            const totalInvestment = totalExpenses; // Capital Invested
+
+            document.getElementById('cardValIncome').innerText = `₹${totalIncome.toLocaleString('en-IN')}`;
+            document.getElementById('cardValExpense').innerText = `₹${totalExpenses.toLocaleString('en-IN')}`;
+            document.getElementById('cardValProfit').innerText = `₹${netProfit.toLocaleString('en-IN')}`;
+            document.getElementById('cardValLoss').innerText = `₹${totalLoss.toLocaleString('en-IN')}`;
+            document.getElementById('cardValInvest').innerText = `₹${totalInvestment.toLocaleString('en-IN')}`;
+            document.getElementById('cardValCrops').innerText = userCrops.length;
+
+            // Render Monetary Bar/Line Chart
+            renderIncomeExpenseChart(totalIncome, totalExpenses);
+            renderExpenseCatChart(expList);
+            renderCropSummaryTable(userCrops, incList, expList);
+        }
+
+        function renderIncomeExpenseChart(income, expense) {
+            const ctx = document.getElementById('chartIncomeVsExpenseCanvas').getContext('2d');
+            if (chartInstanceIncomeExpense) chartInstanceIncomeExpense.destroy();
+
+            chartInstanceIncomeExpense = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [i18n[currentLang].cardTotalIncome || 'Total Income', i18n[currentLang].cardTotalExpense || 'Total Expenses'],
+                    datasets: [{
+                        label: 'Amount in ₹',
+                        data: [income, expense],
+                        backgroundColor: ['#2e7d32', '#c62828'],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            ticks: {
+                                callback: function(value) { return '₹' + value.toLocaleString('en-IN'); }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderExpenseCatChart(expList) {
+            const ctx = document.getElementById('chartExpenseCategoryCanvas').getContext('2d');
+            if (chartInstanceExpenseCat) chartInstanceExpenseCat.destroy();
+
+            const categories = {};
+            expList.forEach(e => {
+                categories[e.category] = (categories[e.category] || 0) + parseFloat(e.amount || 0);
+            });
+
+            chartInstanceExpenseCat = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(categories),
+                    datasets: [{
+                        data: Object.values(categories),
+                        backgroundColor: ['#4caf50', '#81c784', '#ffb74d', '#ff8a65', '#ba68c8', '#64b5f6', '#4dd0e1', '#a1887f']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.label}: ₹${context.raw.toLocaleString('en-IN')}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderCropSummaryTable(crops, incList, expList) {
+            const tbody = document.getElementById('cropSummaryTableBody');
+            tbody.innerHTML = '';
+
+            crops.forEach(crop => {
+                const farm = appData.farms.find(f => f.id === crop.farmId);
+                const cIncome = incList.filter(i => i.cropId === crop.id).reduce((sum, i) => sum + parseFloat(i.amount || 0), 0);
+                const cExpense = expList.filter(e => e.cropId === crop.id).reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+                const diff = cIncome - cExpense;
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="fw-bold">${crop.name}</td>
+                        <td>${farm ? farm.name : '-'}</td>
+                        <td class="text-success fw-semibold">₹${cIncome.toLocaleString('en-IN')}</td>
+                        <td class="text-danger fw-semibold">₹${cExpense.toLocaleString('en-IN')}</td>
+                        <td class="${diff >= 0 ? 'text-primary' : 'text-danger'} fw-bold">₹${diff.toLocaleString('en-IN')}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        // -------------------------------------------------------------
+        // 7. Farm & Crop Management CRUD
+        // -------------------------------------------------------------
+        function renderFarms() {
+            const tbody = document.getElementById('farmListTableBody');
+            tbody.innerHTML = '';
+            const userFarms = appData.farms.filter(f => f.farmerId === appData.currentUser.id);
+
+            userFarms.forEach(f => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="fw-bold">${f.name}</td>
+                        <td>${f.area}</td>
+                        <td>${f.unit}</td>
+                        <td>${f.location || '-'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary me-1" onclick="editFarm('${f.id}')"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteFarm('${f.id}')"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        let editingFarmId = null;
+        let editingCropId = null;
+
+        function editFarm(farmId) {
+            const farm = appData.farms.find(f => f.id === farmId && f.farmerId === appData.currentUser.id);
+            if (!farm) return;
+            editingFarmId = farmId;
+            document.getElementById('farmName').value = farm.name;
+            document.getElementById('farmArea').value = farm.area;
+            document.getElementById('farmUnit').value = farm.unit;
+            document.getElementById('farmLocation').value = farm.location || '';
+            document.querySelector('#view-farms form button[type=submit]').innerText = 'Update Farm';
+            document.getElementById('farmName').focus();
+        }
+
+        function handleSaveFarm(e) {
+            e.preventDefault();
+            const newFarm = {
+                id: editingFarmId || 'F_' + Date.now(),
+                farmerId: appData.currentUser.id,
+                name: document.getElementById('farmName').value.trim(),
+                area: document.getElementById('farmArea').value,
+                unit: document.getElementById('farmUnit').value,
+                location: document.getElementById('farmLocation').value.trim()
+            };
+            if (editingFarmId) {
+                const index = appData.farms.findIndex(f => f.id === editingFarmId && f.farmerId === appData.currentUser.id);
+                if (index !== -1) appData.farms[index] = newFarm;
+                editingFarmId = null;
+            } else appData.farms.push(newFarm);
+            saveData();
+            e.target.reset();
+            document.querySelector('#view-farms form button[type=submit]').innerText = 'Save Farm';
+            renderFarms();
+            alert('Farm saved successfully!');
+        }
+
+        function deleteFarm(farmId) {
+            appData.farms = appData.farms.filter(f => f.id !== farmId);
+            saveData();
+            renderFarms();
+        }
+
+        function renderCrops() {
+            const tbody = document.getElementById('cropListTableBody');
+            tbody.innerHTML = '';
+            const userFarmIds = appData.farms.filter(f => f.farmerId === appData.currentUser.id).map(f => f.id);
+            const userCrops = appData.crops.filter(c => userFarmIds.includes(c.farmId));
+
+            // Populate Farm selector inside the dedicated page form
+            const farmSelect = document.getElementById('cropFarmId');
+            farmSelect.innerHTML = '';
+            appData.farms.filter(f => f.farmerId === appData.currentUser.id).forEach(f => {
+                farmSelect.innerHTML += `<option value="${f.id}">${f.name}</option>`;
+            });
+
+            userCrops.forEach(c => {
+                const farm = appData.farms.find(f => f.id === c.farmId);
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="fw-bold">${c.name}</td>
+                        <td>${farm ? farm.name : '-'}</td>
+                        <td><span class="badge bg-success">${c.season}</span></td>
+                        <td>${c.sowingDate || '-'}</td>
+                        <td>${c.harvestDate || '-'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary me-1" onclick="editCrop('${c.id}')"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteCrop('${c.id}')"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function editCrop(cropId) {
+            const crop = appData.crops.find(c => c.id === cropId);
+            const allowedFarmIds = appData.farms.filter(f => f.farmerId === appData.currentUser.id).map(f => f.id);
+            if (!crop || !allowedFarmIds.includes(crop.farmId)) return;
+            editingCropId = cropId;
+            document.getElementById('cropFarmId').value = crop.farmId;
+            document.getElementById('cropName').value = crop.name;
+            document.getElementById('cropSeason').value = crop.season;
+            document.getElementById('cropSowing').value = crop.sowingDate || '';
+            document.getElementById('cropHarvest').value = crop.harvestDate || '';
+            document.querySelector('#view-crops form button[type=submit]').innerText = 'Update Crop';
+            document.getElementById('cropName').focus();
+        }
+
+        function handleSaveCrop(e) {
+            e.preventDefault();
+            const newCrop = {
+                id: editingCropId || 'C_' + Date.now(),
+                farmId: document.getElementById('cropFarmId').value,
+                name: document.getElementById('cropName').value.trim(),
+                season: document.getElementById('cropSeason').value,
+                sowingDate: document.getElementById('cropSowing').value,
+                harvestDate: document.getElementById('cropHarvest').value
+            };
+            if (editingCropId) {
+                const index = appData.crops.findIndex(c => c.id === editingCropId);
+                if (index !== -1) appData.crops[index] = newCrop;
+                editingCropId = null;
+            } else appData.crops.push(newCrop);
+            saveData();
+            e.target.reset();
+            document.querySelector('#view-crops form button[type=submit]').innerText = 'Save Crop';
+            renderCrops();
+            alert('Crop saved successfully!');
+        }
+
+        function deleteCrop(cropId) {
+            appData.crops = appData.crops.filter(c => c.id !== cropId);
+            saveData();
+            renderCrops();
+        }
+
+        // -------------------------------------------------------------
+        // 8. Expense & Income Entry Handlers
+        // -------------------------------------------------------------
+        function populateCropDropdown(farmSelectId, cropSelectId) {
+            const farmId = document.getElementById(farmSelectId).value;
+            const cropSelect = document.getElementById(cropSelectId);
+            cropSelect.innerHTML = '';
+            const matchingCrops = appData.crops.filter(c => c.farmId === farmId);
+            matchingCrops.forEach(c => {
+                cropSelect.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+            });
+        }
+
+        function prepareExpenseForm() {
+            const farmSelect = document.getElementById('expFarm');
+            farmSelect.innerHTML = '';
+            const userFarms = appData.farms.filter(f => f.farmerId === appData.currentUser.id);
+            userFarms.forEach(f => {
+                farmSelect.innerHTML += `<option value="${f.id}">${f.name}</option>`;
+            });
+            if (userFarms.length > 0) populateCropDropdown('expFarm', 'expCrop');
+            document.getElementById('expDate').valueAsDate = new Date();
+        }
+
+        let editingTransactionId = null;
+        let editingTransactionType = null;
+
+        function editTransaction(id, type) {
+            const list = type === 'EXPENSE' ? appData.expenses : appData.incomes;
+            const item = list.find(x => x.id === id && x.farmerId === appData.currentUser.id);
+            if (!item) return;
+            editingTransactionId = id;
+            editingTransactionType = type;
+            if (type === 'EXPENSE') {
+                switchView('add-expense');
+                document.getElementById('expDate').value = item.date;
+                document.getElementById('expFarm').value = item.farmId;
+                populateCropDropdown('expFarm', 'expCrop');
+                document.getElementById('expCrop').value = item.cropId;
+                document.getElementById('expCategory').value = item.category;
+                document.getElementById('expAmount').value = item.amount;
+                document.getElementById('expPaymentMethod').value = item.paymentMethod || 'Cash';
+                document.getElementById('expDescription').value = item.description || '';
+                document.querySelector('#view-add-expense form button[type=submit]').innerText = 'Update Expense';
+            } else {
+                switchView('add-income');
+                document.getElementById('incDate').value = item.date;
+                document.getElementById('incFarm').value = item.farmId;
+                populateCropDropdown('incFarm', 'incCrop');
+                document.getElementById('incCrop').value = item.cropId;
+                document.getElementById('incUnit').value = item.unit;
+                document.getElementById('incQuantity').value = item.quantity;
+                document.getElementById('incPriceUnit').value = item.pricePerUnit;
+                document.getElementById('incTotalAmount').value = item.amount;
+                document.getElementById('incBuyer').value = item.buyer || '';
+                document.querySelector('#view-add-income form button[type=submit]').innerText = 'Update Income';
+            }
+        }
+
+        function handleSaveExpense(e) {
+            e.preventDefault();
+            const newExp = {
+                id: editingTransactionType === 'EXPENSE' ? editingTransactionId : 'E_' + Date.now(),
+                farmerId: appData.currentUser.id,
+                date: document.getElementById('expDate').value,
+                farmId: document.getElementById('expFarm').value,
+                cropId: document.getElementById('expCrop').value,
+                category: document.getElementById('expCategory').value,
+                amount: parseFloat(document.getElementById('expAmount').value),
+                paymentMethod: document.getElementById('expPaymentMethod').value,
+                description: document.getElementById('expDescription').value.trim()
+            };
+            if (editingTransactionType === 'EXPENSE') {
+                const idx = appData.expenses.findIndex(x => x.id === editingTransactionId);
+                if (idx !== -1) appData.expenses[idx] = newExp;
+            } else appData.expenses.push(newExp);
+            editingTransactionId = null; editingTransactionType = null;
+            saveData();
+            e.target.reset();
+            document.querySelector('#view-add-expense form button[type=submit]').innerText = 'Save Expense';
+            alert('Expense Recorded Successfully!');
+            switchView('dashboard');
+        }
+
+        function prepareIncomeForm() {
+            const farmSelect = document.getElementById('incFarm');
+            farmSelect.innerHTML = '';
+            const userFarms = appData.farms.filter(f => f.farmerId === appData.currentUser.id);
+            userFarms.forEach(f => {
+                farmSelect.innerHTML += `<option value="${f.id}">${f.name}</option>`;
+            });
+            if (userFarms.length > 0) populateCropDropdown('incFarm', 'incCrop');
+            document.getElementById('incDate').valueAsDate = new Date();
+        }
+
+        function calcTotalIncomeAmount() {
+            const qty = parseFloat(document.getElementById('incQuantity').value) || 0;
+            const price = parseFloat(document.getElementById('incPriceUnit').value) || 0;
+            document.getElementById('incTotalAmount').value = (qty * price).toFixed(2);
+        }
+
+        function handleSaveIncome(e) {
+            e.preventDefault();
+            const newInc = {
+                id: editingTransactionType === 'INCOME' ? editingTransactionId : 'I_' + Date.now(),
+                farmerId: appData.currentUser.id,
+                date: document.getElementById('incDate').value,
+                farmId: document.getElementById('incFarm').value,
+                cropId: document.getElementById('incCrop').value,
+                unit: document.getElementById('incUnit').value,
+                quantity: parseFloat(document.getElementById('incQuantity').value),
+                pricePerUnit: parseFloat(document.getElementById('incPriceUnit').value),
+                amount: parseFloat(document.getElementById('incTotalAmount').value),
+                buyer: document.getElementById('incBuyer').value.trim()
+            };
+            if (editingTransactionType === 'INCOME') {
+                const idx = appData.incomes.findIndex(x => x.id === editingTransactionId);
+                if (idx !== -1) appData.incomes[idx] = newInc;
+            } else appData.incomes.push(newInc);
+            editingTransactionId = null; editingTransactionType = null;
+            saveData();
+            e.target.reset();
+            document.querySelector('#view-add-income form button[type=submit]').innerText = 'Save Income Transaction';
+            alert('Income Transaction Saved Successfully!');
+            switchView('dashboard');
+        }
+
+        // -------------------------------------------------------------
+        // 9. Transaction Log & Reports Export Simulation
+        // -------------------------------------------------------------
+        function renderTransactions() {
+            const tbody = document.getElementById('transactionTableBody');
+            tbody.innerHTML = '';
+            const farmerId = appData.currentUser.id;
+
+            const logs = [
+                ...appData.expenses.filter(e => e.farmerId === farmerId).map(e => ({ ...e, type: 'EXPENSE' })),
+                ...appData.incomes.filter(i => i.farmerId === farmerId).map(i => ({ ...i, type: 'INCOME' }))
+            ].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            logs.forEach(log => {
+                const farm = appData.farms.find(f => f.id === log.farmId);
+                const crop = appData.crops.find(c => c.id === log.cropId);
+                const isInc = log.type === 'INCOME';
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td><span class="badge ${isInc ? 'bg-success' : 'bg-danger'}">${log.type}</span></td>
+                        <td>${log.date}</td>
+                        <td>${farm ? farm.name : '-'}</td>
+                        <td>${crop ? crop.name : '-'}</td>
+                        <td>${isInc ? `Sale (${log.quantity} ${log.unit})` : log.category}</td>
+                        <td class="${isInc ? 'text-success' : 'text-danger'} fw-bold">₹${log.amount.toLocaleString('en-IN')}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary me-1" onclick="editTransaction('${log.id}', '${log.type}')"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteTransaction('${log.id}', '${log.type}')"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function deleteTransaction(id, type) {
+            if (type === 'EXPENSE') appData.expenses = appData.expenses.filter(e => e.id !== id);
+            else appData.incomes = appData.incomes.filter(i => i.id !== id);
+            saveData();
+            renderTransactions();
+        }
+
+        function renderReports() {
+            const farmerId = appData.currentUser.id;
+            const expList = appData.expenses.filter(e => e.farmerId === farmerId);
+            const incList = appData.incomes.filter(i => i.farmerId === farmerId);
+
+            const totalIncome = incList.reduce((sum, i) => sum + parseFloat(i.amount || 0), 0);
+            const totalExpenses = expList.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+            const netProfit = totalIncome - totalExpenses;
+
+            document.getElementById('repTotalIncome').innerText = `₹${totalIncome.toLocaleString('en-IN')}`;
+            document.getElementById('repTotalExpense').innerText = `₹${totalExpenses.toLocaleString('en-IN')}`;
+            document.getElementById('repNetProfit').innerText = `₹${netProfit.toLocaleString('en-IN')}`;
+
+            const catBody = document.getElementById('repCategoryBody');
+            catBody.innerHTML = '';
+            const catMap = {};
+            expList.forEach(e => {
+                catMap[e.category] = (catMap[e.category] || 0) + parseFloat(e.amount || 0);
+            });
+            Object.keys(catMap).forEach(cat => {
+                catBody.innerHTML += `
+                    <tr>
+                        <td class="fw-semibold">${cat}</td>
+                        <td class="text-danger fw-bold">₹${catMap[cat].toLocaleString('en-IN')}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function exportToExcel() {
+            const farmerId = appData.currentUser.id;
+            let csvContent = "data:text/csv;charset=utf-8,Type,Date,Category,Amount\n";
+            appData.expenses.filter(e => e.farmerId === farmerId).forEach(e => {
+                csvContent += `EXPENSE,${e.date},${e.category},${e.amount}\n`;
+            });
+            appData.incomes.filter(i => i.farmerId === farmerId).forEach(i => {
+                csvContent += `INCOME,${i.date},Crop Sale,${i.amount}\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `FarmTrack_Report_${appData.currentUser.name}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function exportToPDF() {
+            window.print();
+        }
+
+        function deleteEntireAccount() {
+            if (!appData.currentUser) return;
+            const farmerId = appData.currentUser.id;
+            const confirmed = confirm('Are you sure you want to permanently delete your entire FarmTrack account and all its data? This cannot be undone.');
+            if (!confirmed) return;
+            appData.farmers = appData.farmers.filter(f => f.id !== farmerId);
+            const farmIds = appData.farms.filter(f => f.farmerId === farmerId).map(f => f.id);
+            appData.farms = appData.farms.filter(f => f.farmerId !== farmerId);
+            appData.crops = appData.crops.filter(c => !farmIds.includes(c.farmId));
+            appData.expenses = appData.expenses.filter(x => x.farmerId !== farmerId);
+            appData.incomes = appData.incomes.filter(x => x.farmerId !== farmerId);
+            appData.currentUser = null;
+            saveData();
+            updateAuthStateUI();
+            switchView('login');
+            alert('Your account and its data have been deleted.');
+        }
+
+        function renderProfile() {
+            if (!appData.currentUser) return;
+            document.getElementById('profName').innerText = appData.currentUser.name;
+            document.getElementById('profMobile').innerText = appData.currentUser.mobile;
+            document.getElementById('profState').innerText = appData.currentUser.state;
+            document.getElementById('profDistrict').innerText = appData.currentUser.district;
+            document.getElementById('profVillage').innerText = appData.currentUser.village;
+        }
+
+    </script>
+</body>
+</html>
